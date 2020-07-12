@@ -3,7 +3,6 @@
 // Note: This code is provided as an example only - it does not implement authentication, TLS or anything even remotely close to security. It's probably fine if all your infrastructure lives on your local network, but you might want to consider looking into security.
 
 #include <PubSubClient.h>
-
 #include "bsec.h"
 #include <LiquidCrystal_I2C.h>
 #include <WiFi.h>
@@ -17,8 +16,8 @@
 #define STATE_SAVE_PERIOD  UINT32_C(60 * 60 * 1000) // every 60 minutes
 
 const char* mqtt_server = "<ip>";
-const char* ssid = "<your-ssid>";
-const char* passphrase = "<your-password>";
+const char* ssid = "<ssid>";
+const char* passphrase = "<psw>";
 
 // Controls the offset for the temperature sensor. My BME680 was reading 4 degrees higher than another thermometer I trusted more, so my offset is 4.0.
 const float tempOffset = 4.0;
@@ -190,8 +189,10 @@ void displayPressure(String pressure)
 
 void displayCO2(String co)
 {
-  lcd.setCursor(0, 3);
-  lcd.print("CO2 " + co + "ppm");
+  lcd.setCursor(12, 2);
+  lcd.write(4);
+  lcd.print(co);
+  lcd.write(6);
   char carr[co.length()];
   co.toCharArray(carr, co.length());
   broker.publish("bme680/co", carr);
@@ -200,7 +201,9 @@ void displayCO2(String co)
 void displayVOC(String voc)
 {
   lcd.setCursor(0, 2);
-  lcd.print("VOC " + voc + "ppm");
+  lcd.write(5);
+  lcd.print(voc);
+  lcd.write(6);
   char carr[voc.length()];
   voc.toCharArray(carr, voc.length());
   broker.publish("bme680/voc", carr);
@@ -318,6 +321,39 @@ void createLCDSymbols() {
     0x1E
   };
   lcd.createChar(3, airPressureSymbol);
+  byte cosymbol[] = {
+    0x03,
+    0x01,
+    0x03,
+    0x02,
+    0x03,
+    0x1C,
+    0x14,
+    0x1C
+  };
+  lcd.createChar(4, cosymbol);
+  byte vocsymbol[] = {
+    0x0A,
+    0x15,
+    0x0A,
+    0x15,
+    0x00,
+    0x11,
+    0x0A,
+    0x04
+  };
+  lcd.createChar(5, vocsymbol);
+  byte ppm[] = {
+    0x1F,
+    0x11,
+    0x1F,
+    0x10,
+    0x10,
+    0x0A,
+    0x15,
+    0x15
+  };
+  lcd.createChar(6, ppm);
 }
 
 // loadState attempts to read the BSEC state from the EEPROM. If the state isn't there yet - it wipes that area of the EEPROM ready to be written to in the future. It'll also set the global variable 'sensorPersisted' to a space, so that the question mark disappears forever from the LCD.
